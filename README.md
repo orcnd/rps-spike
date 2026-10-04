@@ -1,9 +1,13 @@
 # Rock Paper Scissors vs Clef
 
+### ▶️ Play / test it live: **https://rps.orcuncandan.com**
+
 A tiny web game where your webcam reads your hand gesture and
 [Cloudflare Clef](https://developers.cloudflare.com/workers-ai/models/clef/)
-(a decision model on Workers AI) is the referee. Live at
-**https://rps.orcuncandan.com**.
+(a decision model on Workers AI) is the referee.
+
+> Open the link on a phone or desktop with a camera. The round starts, you
+> show ✊ / ✋ / ✌️, and Clef calls the winner.
 
 Clef does the work the game is built around: it takes a webcam frame plus a
 fixed set of answers (`rock` / `paper` / `scissors` / `none`) and returns
