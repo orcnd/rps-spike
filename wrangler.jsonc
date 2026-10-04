@@ -1,0 +1,15 @@
+{
+  "name": "rps",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "ai": { "binding": "AI" },
+  "routes": [{ "pattern": "rps.orcuncandan.com", "custom_domain": true }],
+  "durable_objects": {
+    "bindings": [{ "name": "BUDGET", "class_name": "Budget" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Budget"] }],
+  "ratelimits": [
+    { "name": "BURST", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } }
+  ]
+}

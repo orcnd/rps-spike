@@ -1,0 +1,14 @@
+# deps & build
+node_modules/
+.wrangler/
+dist/
+*.log
+
+# secrets / local config — never commit
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+*.pem
+*.key
+wrangler.toml.bak

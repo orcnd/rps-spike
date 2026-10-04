@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0e0f13" />
+<title>Rock Paper Scissors · vs Clef</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#0e0f13; --card:#191b22; --fg:#f2f3f5; --mut:#9aa0ab;
+    --ac:#f6821f; --win:#36c26b; --lose:#f0506e; --draw:#8a92a6;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    display:flex; flex-direction:column; min-height:100dvh;
+  }
+  header{ padding:14px 16px 6px; text-align:center; }
+  header h1{ font-size:17px; margin:0; letter-spacing:.2px; }
+  header .by{ color:var(--mut); font-size:12px; margin-top:2px; }
+
+  .score{ display:flex; justify-content:center; align-items:stretch; gap:10px; padding:8px 16px 4px; }
+  .score .s{ background:var(--card); border-radius:12px; padding:8px 14px; min-width:92px; text-align:center; }
+  .score .s b{ display:block; font-size:26px; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .score .s span{ font-size:11px; color:var(--mut); text-transform:uppercase; letter-spacing:.5px; }
+  .score .vs{ align-self:center; color:var(--mut); font-size:13px; }
+  .streak{ text-align:center; font-size:12px; color:var(--mut); min-height:16px; }
+
+  main{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+        gap:14px; padding:10px 16px calc(18px + var(--safe-b)); width:100%; max-width:520px; margin:0 auto; }
+
+  .stage{ position:relative; width:100%; aspect-ratio:4/3; background:#000; border-radius:16px; overflow:hidden; }
+  video{ width:100%; height:100%; object-fit:cover; display:block; transform:scaleX(-1); }
+  video.rear{ transform:none; }
+  .camoff{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center;
+           color:var(--mut); font-size:14px; padding:24px; }
+  .prompt{ position:absolute; left:0; right:0; bottom:0; display:none; align-items:center; justify-content:center;
+           gap:10px; padding:12px; font-size:22px; font-weight:800; color:#fff;
+           background:linear-gradient(transparent, rgba(0,0,0,.6)); }
+  .prompt.show{ display:flex; }
+  .prompt .dots{ font-size:16px; color:#ffd9b0; }
+  .pulse{ animation:pl 1s ease-in-out infinite; }
+  @keyframes pl{ 0%,100%{opacity:1} 50%{opacity:.45} }
+  .flash{ position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; }
+  .flash.go{ animation:fl .35s ease; }
+  @keyframes fl{ from{opacity:.8} to{opacity:0} }
+  .camtoggle{ position:absolute; top:10px; right:10px; background:rgba(0,0,0,.5); border:0; color:#fff;
+              width:40px; height:40px; border-radius:50%; font-size:18px; cursor:pointer; backdrop-filter:blur(4px); }
+  .live{ position:absolute; top:10px; left:10px; background:rgba(0,0,0,.5); color:#fff; font-size:12px;
+         padding:4px 10px; border-radius:20px; display:none; }
+  .live.show{ display:block; }
+
+  .reveal{ width:100%; display:flex; align-items:center; justify-content:center; gap:14px; min-height:96px; }
+  .reveal .hand{ background:var(--card); border-radius:14px; padding:10px 6px; width:40%; max-width:150px; text-align:center; }
+  .reveal .hand .emo{ font-size:46px; line-height:1; }
+  .reveal .hand .who{ font-size:12px; color:var(--mut); margin-top:4px; }
+  .reveal .mid{ font-size:22px; font-weight:800; width:20%; text-align:center; }
+  .banner{ font-size:22px; font-weight:800; text-align:center; min-height:30px; }
+  .banner.win{ color:var(--win);} .banner.lose{ color:var(--lose);} .banner.draw{ color:var(--draw);}
+  .clefline{ text-align:center; font-size:12px; color:var(--mut); min-height:18px; }
+
+  .cta{ width:100%; display:flex; gap:10px; }
+  button.play{ flex:1; background:var(--ac); color:#111; border:0; border-radius:14px;
+               padding:16px; font-size:18px; font-weight:800; cursor:pointer; }
+  button.sec{ flex:0 0 auto; background:#2b2e38; color:var(--fg); border:0; border-radius:14px; padding:16px 18px; font-size:15px; font-weight:700; cursor:pointer; }
+  button:disabled{ opacity:.55; cursor:default; }
+  .msg{ text-align:center; color:var(--mut); font-size:13px; min-height:18px; }
+  .dev{ margin-top:auto; width:100%; }
+  .dev summary{ color:var(--mut); font-size:12px; cursor:pointer; }
+  pre{ background:#111319; color:#cfd3db; padding:10px; border-radius:10px; overflow:auto; font-size:11px; max-height:160px; }
+
+  /* full-screen result */
+  .fsx{ position:fixed; inset:0; z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center;
+        text-align:center; padding:24px; opacity:0; transition:opacity .25s ease; }
+  .fsx.show{ display:flex; opacity:1; }
+  .fsx.win{ background:radial-gradient(120% 90% at 50% 0%, #1e5b38, #0e2a1b 70%, #081410); }
+  .fsx.lose{ background:radial-gradient(120% 90% at 50% 0%, #6b2231, #2a0f16 70%, #140809); }
+  .fsx.draw{ background:radial-gradient(120% 90% at 50% 0%, #33384a, #171922 70%); }
+  .fsx .hands{ display:flex; align-items:center; gap:18px; margin-bottom:8px; }
+  .fsx .hands .e{ font-size:clamp(56px,20vw,120px); line-height:1; filter:drop-shadow(0 8px 24px rgba(0,0,0,.5)); }
+  .fsx .hands .v{ font-size:clamp(18px,5vw,26px); color:#ffffffaa; font-weight:800; }
+  .fsx .title{ font-size:clamp(34px,11vw,72px); font-weight:900; letter-spacing:.5px; line-height:1.02; margin:6px 0; }
+  .fsx.win .title{ color:#7ff0a8; } .fsx.lose .title{ color:#ff9db0; } .fsx.draw .title{ color:#c7cedd; }
+  .fsx .sub{ font-size:clamp(13px,3.6vw,16px); color:#ffffffbb; }
+  .fsx .next{ margin-top:18px; font-size:13px; color:#ffffff88; }
+  .fsx .pop{ animation:pop .5s cubic-bezier(.2,1.3,.4,1) both; }
+  @keyframes pop{ 0%{ transform:scale(.3); opacity:0 } 100%{ transform:scale(1); opacity:1 } }
+  .fsx.lose .shake{ animation:shake .5s ease; }
+  @keyframes shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-12px)} 40%{transform:translateX(10px)} 60%{transform:translateX(-7px)} 80%{transform:translateX(5px)} }
+  #confetti{ position:fixed; inset:0; z-index:51; pointer-events:none; display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Rock · Paper · Scissors</h1>
+  <div class="by">referee: Cloudflare Clef · your camera reads your move</div>
+</header>
+
+<div class="score">
+  <div class="s"><b id="sYou">0</b><span>You</span></div>
+  <div class="vs">—</div>
+  <div class="s"><b id="sCpu">0</b><span>Clef</span></div>
+</div>
+<div class="streak" id="streak"></div>
+
+<main>
+  <div class="stage">
+    <video id="cam" autoplay playsinline muted></video>
+    <div class="camoff" id="camoff">Start the camera to play</div>
+    <div class="live" id="live"></div>
+    <div class="prompt" id="prompt"><span class="pulse">Show your move!</span><span class="dots">✊ ✋ ✌️</span></div>
+    <div class="flash" id="flash"></div>
+    <button class="camtoggle" id="camtoggle" title="Flip camera" hidden>🔄</button>
+  </div>
+
+  <div class="reveal" id="reveal" hidden>
+    <div class="hand"><div class="emo" id="youEmo">·</div><div class="who">You</div></div>
+    <div class="mid">vs</div>
+    <div class="hand"><div class="emo" id="cpuEmo">·</div><div class="who">Clef</div></div>
+  </div>
+  <div class="banner" id="banner"></div>
+  <div class="clefline" id="clefline"></div>
+
+  <div class="cta">
+    <button class="play" id="play">Start camera</button>
+    <button class="sec" id="stop" hidden>Pause</button>
+  </div>
+  <div class="msg" id="msg">Camera requires HTTPS or localhost.</div>
+
+  <details class="dev" id="devPanel" hidden>
+    <summary>developer</summary>
+    <div class="msg" id="lat" style="text-align:left"></div>
+    <pre id="raw">—</pre>
+  </details>
+</main>
+
+<div class="fsx" id="fsx">
+  <div class="hands pop">
+    <span class="e" id="fxYou">✊</span>
+    <span class="v">VS</span>
+    <span class="e" id="fxCpu">✋</span>
+  </div>
+  <div class="title pop" id="fxTitle">YOU WIN</div>
+  <div class="sub" id="fxSub"></div>
+  <div class="next" id="fxNext">next round shortly…</div>
+</div>
+<canvas id="confetti"></canvas>
+
+<script>
+const EMO = { rock:"✊", paper:"✋", scissors:"✌️", none:"🖐️?" };
+const NAME = { rock:"Rock", paper:"Paper", scissors:"Scissors" };
+const BEATS = { rock:"scissors", paper:"rock", scissors:"paper" };
+const MOVES = ["rock","paper","scissors"];
+const LOCK_CONF = 0.60;      // lock a move above this confidence
+const POLL_MS   = 900;       // sampling interval while waiting for a move
+const TIMEOUT_MS = 12000;    // reset the round if no move seen in this time
+const COOLDOWN_MS = 2600;    // result display time
+const MOTION_MIN = 8;        // min mean pixel change to spend a Clef call
+const FORCE_MS   = 2200;     // classify at least this often even if still (held gesture)
+
+const $ = id => document.getElementById(id);
+const cam=$('cam'), flash=$('flash'), reveal=$('reveal'), prompt=$('prompt'), live=$('live');
+const banner=$('banner'), clefline=$('clefline'), play=$('play'), stopBtn=$('stop'), msg=$('msg');
+const camoff=$('camoff'), camtoggle=$('camtoggle'), streakEl=$('streak');
+
+let stream=null, facing="user", scoreYou=0, scoreCpu=0, streak=0;
+let started=false, active=false, waiting=false, roundTimer=null, pollTimer=null, busy=false;
+const cvs=document.createElement('canvas');
+
+async function startCam(){
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); }
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:facing, width:{ideal:640}, height:{ideal:480} }, audio:false
+    });
+    cam.srcObject=stream; cam.classList.toggle('rear', facing!=="user");
+    camoff.style.display="none"; camtoggle.hidden=false; started=true; return true;
+  }catch(e){ camoff.textContent="Camera unavailable: "+(e.name||e); camoff.style.display="flex"; return false; }
+}
+camtoggle.onclick=async()=>{ facing=facing==="user"?"environment":"user"; await startCam(); };
+
+function frameDataURL(){
+  const vw=cam.videoWidth||640, vh=cam.videoHeight||480;
+  const w=512, h=Math.round(512*(vh/vw));
+  cvs.width=w; cvs.height=h;
+  const ctx=cvs.getContext('2d');
+  if(facing==="user"){ ctx.translate(w,0); ctx.scale(-1,1); }
+  ctx.drawImage(cam,0,0,w,h);
+  return cvs.toDataURL('image/jpeg',0.8);
+}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+// --- motion gate: don't spend a Clef call on a static scene ---
+const gcv=document.createElement('canvas'); gcv.width=32; gcv.height=24;
+let prevGray=null, lastCallAt=0;
+function sceneMotion(){
+  const g=gcv.getContext('2d'); g.drawImage(cam,0,0,32,24);
+  const d=g.getImageData(0,0,32,24).data; const n=32*24; const cur=new Uint8Array(n);
+  for(let i=0;i<n;i++){ cur[i]=(d[i*4]*0.3+d[i*4+1]*0.59+d[i*4+2]*0.11); }
+  let diff=0; if(prevGray){ for(let i=0;i<n;i++) diff+=Math.abs(cur[i]-prevGray[i]); diff/=n; }
+  prevGray=cur; return prevGray ? diff : 999;
+}
+
+async function classify(){
+  const image=frameDataURL();
+  lastCallAt=performance.now();
+  const t0=performance.now();
+  const r=await fetch('/classify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({image})});
+  const j=await r.json().catch(()=>({ok:false,error:'parse'}));
+  const rtt=Math.round(performance.now()-t0);
+  $('raw').textContent=JSON.stringify(j,null,2);
+  $('lat').textContent=`round-trip ${rtt} ms · Clef ${j?.ms??'?'} ms · ${j?.result?.usage?.input_tokens??'?'} tokens · left ${j?.remaining??'?'}`;
+  if(r.status===429 || (j && j.ok===false)){ return {stop:true, message:j?.message||"Service busy, try later."}; }
+  const probs=j?.result?.answers?.gesture?.probabilities||null;
+  if(!probs) return {move:"none",conf:0};
+  const move=Object.keys(probs).reduce((b,k)=>probs[k]>(probs[b]??-1)?k:b,Object.keys(probs)[0]);
+  return {move,conf:probs[move]};
+}
+
+function startRound(){
+  reveal.hidden=true; banner.textContent=""; banner.className="banner"; clefline.textContent="";
+  prompt.classList.add('show'); live.classList.add('show'); live.textContent="Clef is looking…";
+  waiting=true;
+  roundTimer=setTimeout(()=>{ // timeout
+    if(!waiting) return; waiting=false; prompt.classList.remove('show'); live.classList.remove('show');
+    msg.textContent="Didn't catch it — restarting when ready."; scheduleNext(1200);
+  }, TIMEOUT_MS);
+  poll();
+}
+
+async function poll(){
+  if(!waiting || !active) return;
+  if(!busy){
+    // motion gate: only spend a Clef call on movement, or periodically for a held gesture
+    const motion = sceneMotion();
+    const due = performance.now()-lastCallAt > FORCE_MS;
+    if(motion < MOTION_MIN && !due){
+      live.textContent="Show your hand…";
+      pollTimer=setTimeout(poll, POLL_MS); return;
+    }
+    busy=true;
+    try{
+      const res=await classify();
+      if(res.stop){ busy=false; return haltGame(res.message); }
+      const {move,conf}=res;
+      if(waiting){
+        live.textContent = move==="none" ? "Clef: no hand" : `Clef: ${NAME[move]} ${Math.round(conf*100)}%`;
+        if(move!=="none" && conf>=LOCK_CONF){ busy=false; return lockMove(move,conf); }
+      }
+    }catch(e){ live.textContent="connection error"; }
+    busy=false;
+  }
+  pollTimer=setTimeout(poll, POLL_MS);
+}
+
+function haltGame(message){
+  active=false; waiting=false; clearTimeout(roundTimer); clearTimeout(pollTimer);
+  prompt.classList.remove('show'); live.classList.remove('show');
+  play.disabled=false; play.textContent="Start"; stopBtn.hidden=true;
+  msg.textContent=message||"Paused.";
+}
+
+function lockMove(you,conf){
+  waiting=false; clearTimeout(roundTimer); clearTimeout(pollTimer);
+  prompt.classList.remove('show'); live.classList.remove('show');
+  flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+
+  const cpu=MOVES[Math.floor(Math.random()*3)];
+  reveal.hidden=false; $('youEmo').textContent=EMO[you]; $('cpuEmo').textContent=EMO[cpu];
+  let res = you===cpu ? "draw" : (BEATS[you]===cpu ? "win":"lose");
+  if(res==="win"){ scoreYou++; streak=streak>0?streak+1:1; banner.textContent="You win! 🎉"; }
+  else if(res==="lose"){ scoreCpu++; streak=streak<0?streak-1:-1; banner.textContent="Clef wins"; }
+  else { banner.textContent="Draw"; streak=0; }
+  banner.className="banner "+res;
+  $('sYou').textContent=scoreYou; $('sCpu').textContent=scoreCpu;
+  streakEl.textContent = streak>1?`🔥 ${streak} win streak`:(streak<-1?`${-streak} loss streak`:"");
+  clefline.textContent=`Clef read your move as "${NAME[you]}" · ${Math.round(conf*100)}% confidence`;
+  msg.textContent="";
+  bigResult(res, you, cpu, conf);
+  scheduleNext(COOLDOWN_MS);
+}
+
+function scheduleNext(ms){ if(active) setTimeout(()=>{ if(active) startRound(); }, ms); }
+
+const fsx=$('fsx');
+const TITLES={ win:"YOU WIN", lose:"CLEF WINS", draw:"DRAW" };
+function bigResult(res, you, cpu, conf){
+  $('fxYou').textContent=EMO[you]; $('fxCpu').textContent=EMO[cpu];
+  $('fxTitle').textContent=TITLES[res];
+  $('fxSub').textContent = res==="draw"
+    ? `Both chose ${NAME[you]}`
+    : `You ${NAME[you]} · Clef ${NAME[cpu]}`;
+  fsx.className="fsx show "+res;
+  document.querySelectorAll('.fsx .pop').forEach(el=>{ el.style.animation='none'; void el.offsetWidth; el.style.animation=''; });
+  if(res==="lose"){ fsx.querySelector('.hands').classList.add('shake'); setTimeout(()=>fsx.querySelector('.hands').classList.remove('shake'),600); }
+  if(res==="win") confetti();
+  setTimeout(()=>{ fsx.className="fsx "+res; }, COOLDOWN_MS-350);
+}
+
+// lightweight confetti
+const cc=$('confetti'), ccx=cc.getContext('2d');
+let confParts=[], confRAF=null;
+function confetti(){
+  cc.style.display="block"; cc.width=innerWidth; cc.height=innerHeight;
+  const colors=["#f6821f","#36c26b","#ffd166","#4aa3ff","#ff7ab0","#ffffff"];
+  confParts=[];
+  for(let i=0;i<140;i++) confParts.push({
+    x:Math.random()*cc.width, y:-20-Math.random()*cc.height*0.3,
+    w:6+Math.random()*6, h:8+Math.random()*8,
+    vy:3+Math.random()*4, vx:-2+Math.random()*4, rot:Math.random()*6.28, vr:-.2+Math.random()*.4,
+    c:colors[Math.floor(Math.random()*colors.length)]
+  });
+  const t0=performance.now();
+  cancelAnimationFrame(confRAF);
+  (function frame(t){
+    ccx.clearRect(0,0,cc.width,cc.height);
+    let alive=false;
+    for(const p of confParts){
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.rot+=p.vr;
+      if(p.y<cc.height+20) alive=true;
+      ccx.save(); ccx.translate(p.x,p.y); ccx.rotate(p.rot); ccx.fillStyle=p.c;
+      ccx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ccx.restore();
+    }
+    if(alive && t-t0<2600) confRAF=requestAnimationFrame(frame);
+    else { ccx.clearRect(0,0,cc.width,cc.height); cc.style.display="none"; }
+  })(t0);
+}
+
+async function onPlay(){
+  if(!started){ const ok=await startCam(); if(!ok) return; play.textContent="Start"; return; }
+  if(!active){ active=true; play.textContent="Playing…"; play.disabled=true; stopBtn.hidden=false; startRound(); }
+}
+function onStop(){
+  active=false; waiting=false; clearTimeout(roundTimer); clearTimeout(pollTimer);
+  prompt.classList.remove('show'); live.classList.remove('show');
+  play.disabled=false; play.textContent="Resume"; stopBtn.hidden=true; msg.textContent="Paused.";
+}
+play.onclick=onPlay; stopBtn.onclick=onStop;
+
+// developer panel only when explicitly requested (?dev)
+if(new URLSearchParams(location.search).has('dev')){ const dp=$('devPanel'); if(dp) dp.hidden=false; }
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "rps-clef-spike",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}
