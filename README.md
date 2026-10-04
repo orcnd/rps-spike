@@ -48,3 +48,7 @@ npx wrangler deploy   # publishes to the custom domain in wrangler.jsonc
 ```
 
 Camera (`getUserMedia`) requires HTTPS or localhost.
+
+## License
+
+[MIT](LICENSE) © Orçun Candan
